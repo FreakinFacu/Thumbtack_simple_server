@@ -11,13 +11,31 @@ var process = require('process');
 
 var database = (function(){
     var data = [{}];
+    var numEqualToCounter = {};
 
     function set(name,value){
-        var topTransaction = data.length - 1;
+        var topTransaction = data.length - 1,
+            oldvalue = _get(name);
         data[topTransaction][name] = value;
+
+        if(value == "NULL"){
+            if(numEqualToCounter[value] !== undefined && numEqualToCounter[value] !== 0){
+                numEqualToCounter[value]--;
+            }
+        }else{
+            if(numEqualToCounter[value] !== undefined){
+                numEqualToCounter[value]++;
+            }else{
+                numEqualToCounter[value] = 1;
+            }
+
+            if(oldvalue !== 'NULL'){
+                numEqualToCounter[oldvalue]--;
+            }
+        }
     }
 
-    function get(name){
+    function _get(name){
         var val = 'NULL', i;
 
         for(i = data.length - 1; i >= 0; i--){
@@ -27,21 +45,22 @@ var database = (function(){
             }
         }
 
+        return val;
+    }
+
+    function get(name){
+        var val = _get(name);
+
         process.stdout.write(val+"\n");
     }
 
     function numEqualTo(val){
-        var count = 0,
-            checked = [],
-            i,temp;
+        var count;
 
-        for(i = data.length - 1; i >= 0; i--){
-            for(temp in data[i]){
-                if(checked.indexOf(temp) === -1 && data[i][temp] === val){
-                    count++;
-                }
-                checked.push(temp);
-            }
+        if(numEqualToCounter[val] !== undefined){
+            count = numEqualToCounter[val];
+        }else{
+            count = 0;
         }
 
         process.stdout.write(count+"\n");
@@ -124,6 +143,7 @@ var database = (function(){
 
         //Uncomment to debug data
 //        process.stdout.write("Current data: " + JSON.stringify(data) + "\n");
+//        process.stdout.write("Current Counter: " + JSON.stringify(numEqualToCounter) + "\n");
     }
 
     return {
